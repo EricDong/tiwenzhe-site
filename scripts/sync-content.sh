@@ -18,7 +18,13 @@ trap cleanup EXIT
 echo "→ Syncing content from $CONTENT_REPO ($CONTENT_BRANCH)"
 
 rm -rf "$CONTENT_DIR"
-git clone --depth=1 --branch "$CONTENT_BRANCH" "$CONTENT_REPO" "$SOURCE_DIR"
+# Private content repo: set CONTENT_REPO_TOKEN (fine-grained PAT, Contents: read-only
+# on tiwenzhe-content) in Cloudflare Pages env. Unset = anonymous clone (public repo).
+CLONE_URL="$CONTENT_REPO"
+if [ -n "${CONTENT_REPO_TOKEN:-}" ]; then
+  CLONE_URL="${CONTENT_REPO/https:\/\//https://x-access-token:${CONTENT_REPO_TOKEN}@}"
+fi
+git clone --quiet --depth=1 --branch "$CONTENT_BRANCH" "$CLONE_URL" "$SOURCE_DIR"
 
 if [ ! -d "$SOURCE_DIR/$CONTENT_PUBLISH_DIR" ]; then
   echo "Expected publish directory not found: $CONTENT_PUBLISH_DIR" >&2
